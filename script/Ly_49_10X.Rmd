@@ -38,7 +38,7 @@ La banque d'ARNm comprend 10293 cellules.
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ####### Chargement de la Matrice mRNA #######
 
-raw.mRNA <- Read10X(data.dir = "/Users/Margaux/Documents/Margaux/Other_data/Data_Ly49/10X/outs/filtered_feature_bc_matrix/")
+raw.mRNA <- Read10X(data.dir = "~/Documents/JM/singelcell_LY49/outs/filtered_feature_bc_matrix/")
 
 # Initialise l'object Seurat avec les comptes bruts de la matrice
 cso <- CreateSeuratObject(counts = raw.mRNA[["Gene Expression"]], project = "Ly49", min.cells = 5)     # On prend les les gênes qui sont exprimés dans minimum 5 cellules
@@ -165,10 +165,10 @@ new_hto <- as.matrix(new_hto[, joint.bcs])
 ####### Configuration de l'object seurat (mRNA) #######
 
 levels(x = QC)
-mat <- suppressWarnings(SCTransform(QC, variable.features.rv.th = 1.3))
-#mat2 <- NormalizeData(QC)
-#mat2 <- FindVariableFeatures(mat2, selection.method = "vst", verbose = FALSE)
-#mat2 <- ScaleData(mat2,features = VariableFeatures(mat))
+# mat <- suppressWarnings(SCTransform(QC, variable.features.rv.th = 1.3))
+mat <- NormalizeData(QC)
+mat <- FindVariableFeatures(mat, selection.method = "vst", verbose = FALSE)
+mat <- ScaleData(mat,features = VariableFeatures(mat))
 ```
 ```{r, echo=FALSE,  message=FALSE, warning=FALSE}
 top30 <- head(VariableFeatures(mat), 30)
@@ -220,7 +220,8 @@ VlnPlot(mat, features = "nCount_RNA", pt.size = 0.1, log = TRUE, group.by = "has
 
 ```{r, echo=FALSE,  message=FALSE, warning=FALSE}
 singlet <- subset(mat, idents = "Singlet")
-saveRDS(singlet, "/Users/Margaux/Documents/Margaux/Other_data/Data_Ly49/10X/matrix/Singlet_norm.RDS")
+saveRDS(singlet, "~/Documents/JM/singelcell_LY49/data/Singlet_norm_log.RDS")
+
 View(singlet@meta.data)
 
 ```
