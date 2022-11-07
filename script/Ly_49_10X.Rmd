@@ -1,0 +1,226 @@
+---
+title: "Ly49"
+author: "Margaux Prieux"
+date: "17/10/2022"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, fig.height=9, fig.width=9, fig.align="center")
+library (Seurat)
+library(dplyr)
+library(ggplot2)
+library(Matrix)
+library(SingleR)
+library(sctransform)
+library("scran")
+```
+
+# 1. Jeux de données
+
+Construction de banque avec la méthode 10X en juillet 2022. 
+Chargement d'environ 50K cellules dans le 10X chromium avec pour objectif de récupérer 10K cellules totales. 
+Ce jeux de données est composés de 7 conditions : 
+
+Naive	
+Ly49p_CD8aa	
+Ly49p_CD8ab	
+Ly49n	
+VV_Ly49p_CD8aa	
+VV_Ly49p_CD8ab	
+VV_B8R	
+
+La banque d'ARNm comprend 10293 cellules.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+####### Chargement de la Matrice mRNA #######
+
+raw.mRNA <- Read10X(data.dir = "/Users/Margaux/Documents/Margaux/Other_data/Data_Ly49/10X/outs/filtered_feature_bc_matrix/")
+
+# Initialise l'object Seurat avec les comptes bruts de la matrice
+cso <- CreateSeuratObject(counts = raw.mRNA[["Gene Expression"]], project = "Ly49", min.cells = 5)     # On prend les les gênes qui sont exprimés dans minimum 5 cellules
+# Transformation en object "Assay"
+umis <- GetAssayData(object = cso, slot = "counts")
+
+####### Chargement de la Matrice HTO #######
+
+#tag <- Read10X(data.dir = "/Users/Margaux/Documents/Margaux/Other_data/Data_Ly49/10X/HTO_ly49/umi_count/", gene.column = 1)
+
+raw.hto <- raw.mRNA[["Antibody Capture"]]
+
+# On regarde la nomenclature des cellules
+#head(colnames(raw.hto))
+#head(colnames(raw.mRNA))
+
+# On homogénéise les nomenclatures
+#colnames(tag) <- paste0(colnames(tag),"-1")
+#head(colnames(tag))
+```
+
+# 2. Contrôle qualité 
+## 2.1 Banque ARNm
+### 2.1.1 Visulisation 
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+############## QC ##############
+
+cso[["percent.mt"]] <- PercentageFeatureSet(cso, pattern = "^mt-")
+VlnPlot(cso, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+Fig : de gauche à droite - nombre de gènes exprimés par cellules ; nombre d'UMIs par cellules ; pourcentage de gènes mitochondriaux par cellules avant contrôle qualité
+
+### 2.1.2 QC : nombre d'UMIs par cellules
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+# Nombre de counts totaux 
+count_depth<- as.data.frame(colSums(cso))
+count_depth[,2] <- rownames(count_depth) 
+colnames(count_depth)=c("count_depth","cells")
+
+libsize.drop <- isOutlier(count_depth$count_depth, nmads=4, type="lower", log=T)
+sum(libsize.drop)
+```
+
+Elimination des cellules dont la taille de la banque transformée en log est inférieure de plus de 4 MAD à la taille médiane de la banque. 
+--> Elimine 326 cellules
+
+
+### 2.1.3 QC : nombre de gènes exprimés par cellules
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+# Nombre de gènes exprimés par cellules
+rna <- as.matrix(cso@assays[["RNA"]]@counts)
+nb_gene_per_cell<- as.data.frame(colSums(rna!=0))
+colnames(nb_gene_per_cell)=c("nb_gene_per_cell")
+feature.drop <- isOutlier(nb_gene_per_cell$nb_gene_per_cell, nmads=4, type="lower", log=T, batch = count_depth$batch_dataset)
+sum(feature.drop)
+```
+
+Elimination des cellules dont le nombre de gènes exprimés transformés en log est de 4 MAD en dessous de la valeur médiane
+--> Elimine 320 cellules
+
+### 2.1.4 QC : nombre de gènes mitochodriaux par cellules
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+#Calculate the sum of counts / cell
+is.mito <- cso[grep("mt-", rownames(cso)),]
+sum_mt <- as.data.frame(colSums(is.mito))
+sum_counts <- as.data.frame(colSums(cso))
+
+#Calculate the % of mt counts and visualize on a plot
+mt_percentage <- ((sum_mt/sum_counts)*100)
+mt_percentage[,2] <- rownames(mt_percentage)
+colnames(mt_percentage) = c("percentage_of_mt_counts", "cells") 
+
+mt.drop <- isOutlier(mt_percentage$percentage_of_mt_counts, nmads=3, type="higher", log=T)
+sum(mt.drop)
+```
+
+Elimination des cellules dont le pourcentage en gènes mitochondriaux log-transformé est supérieur de plus de 3 MAD à la taille médiane de la banque. 
+--> Elimine 305 cellules
+
+### 2.1.5 Récapitulatif des cellules éliminés et visualisation après QC
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+# Récapitulatif 
+QC <- cso[,!(libsize.drop | feature.drop | mt.drop)]
+
+data.frame(ByLibSize=sum(libsize.drop), ByFeature=sum(feature.drop), ByFeature=sum(mt.drop), Remaining=ncol(QC))
+
+QC[["percent.mt"]] <- PercentageFeatureSet(QC, pattern = "^mt-")
+VlnPlot(QC, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+```
+
+On prend les les gènes qui sont exprimés dans minimum 5 cellules.
+
+# 3. Normalisation et association des tags aux cellules
+
+Normalisation des ARNm : sctransform 
+Normalisation des tag : CLR (centered-log ratio)
+
+```{r, echo=FALSE, include = F, message=FALSE, warning=FALSE}
+# On supprime les séquences "unmapped" définies CellRanger
+rownames(raw.hto)
+hto <- raw.hto
+rownames(hto) <- c("VV_B8R","Ly49p_CD8aa","Ly49p_CD8ab", "Ly49n", "Naive", "VV_Ly49p_CD8aa", "VV_Ly49p_CD8ab")
+rownames(hto)
+
+count_hto<- as.data.frame(colSums(hto))
+count_hto$cell <- rownames(count_hto)
+count_hto2 <- as.data.frame(count_hto[count_hto$`colSums(hto)` > 0,])
+new_hto <- hto[,rownames(count_hto2)]
+
+####### Sélection des cellules avec barcode en commun entre HTO / mRNA #######
+
+joint.bcs <- intersect(colnames(QC),colnames(new_hto))
+
+# Sélection des lignes qui correspondent aux cellules en commun
+QC <- QC[, joint.bcs]
+new_hto <- as.matrix(new_hto[, joint.bcs])
+
+####### Configuration de l'object seurat (mRNA) #######
+
+levels(x = QC)
+mat <- suppressWarnings(SCTransform(QC, variable.features.rv.th = 1.3))
+#mat2 <- NormalizeData(QC)
+#mat2 <- FindVariableFeatures(mat2, selection.method = "vst", verbose = FALSE)
+#mat2 <- ScaleData(mat2,features = VariableFeatures(mat))
+```
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+top30 <- head(VariableFeatures(mat), 30)
+plot1 <- VariableFeaturePlot(mat)
+plot2 <- LabelPoints(plot = plot1, points = top30, repel = T, xnudge = 0, ynudge = 0)
+CombinePlots(plots = list(plot2))
+
+####### Ajoute des données HTO comme un nouvel assay indépendant du mRNA #######
+
+mat[["HTO"]] <- CreateAssayObject(counts = new_hto)
+mat <- NormalizeData(mat, assay = "HTO", normalization.method = "CLR")
+
+####### Démultiplexing: Association : cellules / conditions #######
+
+mat <- HTODemux(mat, assay = "HTO", positive.quantile = 0.99)
+table(mat$HTO_classification.global)
+```
+Après démultiplexing (concordance des barcode cell entre la banque ARNm et HTO), 8310 cellules sont exploitables. 
+
+## 3.1 Visualisualisation de l'enrichissement et des counts pour les HTO 
+```{r, echo=FALSE,  message=FALSE, warning=FALSE, fig.height=15, fig.width=10}
+Idents(mat) <- "HTO_maxID"
+RidgePlot(mat, assay = "HTO", features = rownames(mat[["HTO"]])[1:7], ncol = 2)
+```
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+VlnPlot(mat, features = "nCount_HTO", pt.size = 0.1, log = TRUE, group.by = "hash.ID")
+
+# First, we will remove negative cells from the object
+Idents(mat)<- 'HTO_classification.global'
+mat.subset <- subset(mat, idents = "Negative", invert = TRUE)
+
+# Calculate a tSNE embedding of the HTO data
+DefaultAssay(mat.subset) <- "HTO"
+mat.subset <- ScaleData(mat.subset, features = rownames(mat.subset),
+    verbose = FALSE)
+mat.subset <- RunPCA(mat.subset, features = rownames(mat.subset), approx = FALSE)
+mat.subset <- RunUMAP(mat.subset, dims = 1:7)
+DimPlot(mat.subset, reduction = "umap", group.by = "hash.ID")
+
+```
+
+## 3.2 Comparaison du nombre d'UMIs pour les cellules uniques et les doublets de cellules
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+
+Idents(mat)<- 'HTO_classification.global'
+VlnPlot(mat, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+VlnPlot(mat, features = "nCount_RNA", pt.size = 0.1, log = TRUE, group.by = "hash.ID")
+```
+
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+singlet <- subset(mat, idents = "Singlet")
+saveRDS(singlet, "/Users/Margaux/Documents/Margaux/Other_data/Data_Ly49/10X/matrix/Singlet_norm.RDS")
+View(singlet@meta.data)
+
+```
