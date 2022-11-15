@@ -81,17 +81,27 @@ ggplot(a, aes(fill=phase, y=n, x=cluster)) +
   scale_y_continuous(limits = c(0,1500)) +
   ggtitle(label = "Cell cycle phase by cluster")
 
-clus <- seq(0,10,1)
-for (i in clus) {
-  inter <- a[which(a$cluster %in% i),] 
-  plt <- ggplot(inter, aes(fill=phase, y=n, x=phase)) +
-    geom_bar(position='dodge', stat='identity') +
-    scale_fill_manual(values= my_palette) +
-    theme_minimal() +
-    scale_y_continuous(limits = c(0,1500)) +
-    ggtitle(label = paste0("Cell cycle phase for cluster ", i))
-  print(plt)
-}
+# clus <- seq(0,10,1)
+# for (i in clus) {
+#   inter <- a[which(a$cluster %in% i),] 
+#   plt <- ggplot(inter, aes(fill=phase, y=n, x=phase)) +
+#     geom_bar(position='dodge', stat='identity') +
+#     scale_fill_manual(values= my_palette) +
+#     theme_minimal() +
+#     scale_y_continuous(limits = c(0,1500)) +
+#     ggtitle(label = paste0("Cell cycle phase for cluster ", i))
+#   print(plt)
+# }
+
+ggplot(a, aes(fill=phase, y=n, x=phase)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_y_continuous(limits = c(0,1500)) +
+  ggtitle(label = paste0("Cell cycle phase by cluster ")) +
+  facet_wrap(~cluster, scales='free_x')
 
 ## 5.2 Visualization Cell cycle phase by cluster--------------------------------
 metadata %>% 
@@ -105,14 +115,26 @@ ggplot(a, aes(fill=population, y=n, x=cluster)) +
   scale_y_continuous(limits = c(0,1200)) +
   ggtitle(label = "Population by cluster")
 
-clus <- seq(0,10,1)
-for (i in clus) {
-  inter <- a[which(a$cluster %in% i),] 
-  plt <- ggplot(inter, aes(fill=population, y=n, x=population)) +
-    geom_bar(position='dodge', stat='identity') +
-    theme_minimal() +
-    scale_fill_manual(values= my_palette) +
-    scale_y_continuous(limits = c(0,1200)) +
-    ggtitle(label = paste0("Population cluster ",i))
-  print(plt)
-}
+# clus <- seq(0,10,1)
+# for (i in clus) {
+#   inter <- a[which(a$cluster %in% i),] 
+#   plt <- ggplot(inter, aes(fill=population, y=n, x=population)) +
+#     geom_bar(position='dodge', stat='identity') +
+#     theme_minimal() +
+#     scale_fill_manual(values= my_palette) +
+#     scale_y_continuous(limits = c(0,1200)) +
+#     ggtitle(label = paste0("Population cluster ",i)) +
+#     facet_wrap(~population, scales='free_x')
+#   print(plt)
+# }
+
+ggplot(a, aes(fill=population, y=n, x=population)) +
+  geom_bar(position='dodge', stat='identity') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_fill_manual(values= my_palette) +
+  scale_y_continuous(limits = c(0,1200)) +
+  ggtitle(label = paste0("Population by cluster")) +
+  facet_wrap(~cluster, scales='free_x')
+

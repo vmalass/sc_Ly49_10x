@@ -39,7 +39,34 @@ my_palette = c("Naive"= "#AA4499",
                "S" = "dodgerblue")
 ```
 
-# 3 Classify cells as G2/M, S, or alternatively G1  
+# 3 PCA UMAP and cluster
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+DimPlot(Singlet_norm,
+        reduction = "pca",
+        group.by = "HTO_maxID",
+        pt.size = 1,
+        cols = my_palette)+
+  labs(color = "legend title")+
+  ggtitle(label = "PCA")
+
+DimPlot(Singlet_norm, 
+        reduction = "umap",
+        group.by = "HTO_maxID", 
+        pt.size = 1, 
+        cols = my_palette,
+        label = T) +
+  labs(color = "Legend :") +
+  ggtitle(label = paste0("UMAP 11 CP"))
+
+DimPlot(Singlet_norm, 
+        reduction = "umap",
+        group.by = "SCT_snn_res.0.5", 
+        pt.size = 1,
+        label = T)+
+  ggtitle(label = paste0( "UMAP 11 CP et resolution : 0.5"))
+```
+
+# 4 Classify cells as G2/M, S, or alternatively G1  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # A list of cell cycle markers, from Tirosh et al, 2015, is loaded with Seurat.  We can
 # segregate this list into markers of G2/M phase and markers of S phase
@@ -62,7 +89,7 @@ Singlet_norm <- CellCycleScoring(Singlet_norm,
 # head(Singlet_norm[[]])
 ```
 
-## 3.1 Visualization  
+## 4.1 Visualization  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 DimPlot(Singlet_norm, 
         reduction = "umap", 
@@ -96,17 +123,27 @@ ggplot(a, aes(fill=phase, y=n, x=cluster)) +
   scale_y_continuous(limits = c(0,1500)) +
   ggtitle(label = "Cell cycle phase by cluster")
 
-clus <- seq(0,10,1)
-for (i in clus) {
-  inter <- a[which(a$cluster %in% i),] 
-  plt <- ggplot(inter, aes(fill=phase, y=n, x=phase)) +
-    geom_bar(position='dodge', stat='identity') +
-    scale_fill_manual(values= my_palette) +
-    theme_minimal() +
-    scale_y_continuous(limits = c(0,1500)) +
-    ggtitle(label = paste0("Cell cycle phase for cluster ", i))
-  print(plt)
-}
+ggplot(a, aes(fill=phase, y=n, x=phase)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_y_continuous(limits = c(0,1500)) +
+  ggtitle(label = paste0("Cell cycle phase by cluster ")) +
+  facet_wrap(~cluster, scales='free_x')
+
+# clus <- seq(0,10,1)
+# for (i in clus) {
+#   inter <- a[which(a$cluster %in% i),] 
+#   plt <- ggplot(inter, aes(fill=phase, y=n, x=phase)) +
+#     geom_bar(position='dodge', stat='identity') +
+#     scale_fill_manual(values= my_palette) +
+#     theme_minimal() +
+#     scale_y_continuous(limits = c(0,1500)) +
+#     ggtitle(label = paste0("Cell cycle phase for cluster ", i))
+#   print(plt)
+# }
 ```
 
 ## 5.2 Visualization Cell cycle phase by cluster
@@ -122,16 +159,26 @@ ggplot(a, aes(fill=population, y=n, x=cluster)) +
   scale_y_continuous(limits = c(0,1200)) +
   ggtitle(label = "Population by cluster")
 
-clus <- seq(0,10,1)
-for (i in clus) {
-  inter <- a[which(a$cluster %in% i),] 
-  plt <- ggplot(inter, aes(fill=population, y=n, x=population)) +
-    geom_bar(position='dodge', stat='identity') +
-    theme_minimal() +
-    scale_fill_manual(values= my_palette) +
-    scale_y_continuous(limits = c(0,1200)) +
-    ggtitle(label = paste0("Population cluster ",i))
-  print(plt)
-}
+ggplot(a, aes(fill=population, y=n, x=population)) +
+  geom_bar(position='dodge', stat='identity') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_fill_manual(values= my_palette) +
+  scale_y_continuous(limits = c(0,1200)) +
+  ggtitle(label = paste0("Population by cluster")) +
+  facet_wrap(~cluster, scales='free_x')
+
+# clus <- seq(0,10,1)
+# for (i in clus) {
+#   inter <- a[which(a$cluster %in% i),] 
+#   plt <- ggplot(inter, aes(fill=population, y=n, x=population)) +
+#     geom_bar(position='dodge', stat='identity') +
+#     theme_minimal() +
+#     scale_fill_manual(values= my_palette) +
+#     scale_y_continuous(limits = c(0,1200)) +
+#     ggtitle(label = paste0("Population cluster ",i))
+#   print(plt)
+# }
 ```
 
