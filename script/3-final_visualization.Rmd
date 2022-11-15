@@ -159,6 +159,10 @@ DoHeatmap(Singlet_norm, features = top10$gene) +
   ggtitle(label = "Heatmaps du DE entre les différents clusters")
 ```
 
+# Save seurat objet
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+saveRDS(Singlet_norm, "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/data/Singlet_norm_3.RDS")
+```
 
 
 
