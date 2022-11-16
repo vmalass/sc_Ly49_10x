@@ -2,7 +2,10 @@
 title: "Cycle_Cell_&_population_by_cluster"
 author: "Malassigne_Victor"
 date: "11/15/2022"
-output: html_document
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
 ---
 
 # 1 Library  
@@ -114,22 +117,32 @@ colnames(metadata)<- c("population","phase","cluster")
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 metadata %>% 
   count(cluster, phase) %>% 
-  arrange(cluster, phase) -> a
+  arrange(cluster, phase) %>% 
+  mutate(pct_total = n / sum(n) * 100) -> a
 
-ggplot(a, aes(fill=phase, y=n, x=cluster)) +
+clus <- seq(0,10,1)
+Metadata_final <- NULL
+for (i in clus) {
+  inter <- a[which(a$cluster %in% i),]
+  inter <- inter %>% 
+    mutate(pct_cluster = n / sum(n) * 100)
+  Metadata_final <- rbind(Metadata_final, inter)
+}
+
+ggplot(Metadata_final, aes(fill = phase, y = pct_cluster, x = cluster)) +
   geom_bar(position='dodge', stat='identity') +
   scale_fill_manual(values= my_palette) +
   theme_minimal() +
-  scale_y_continuous(limits = c(0,1500)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   ggtitle(label = "Cell cycle phase by cluster")
 
-ggplot(a, aes(fill=phase, y=n, x=phase)) +
+ggplot(Metadata_final, aes(fill=phase, y=pct_cluster, x=phase)) +
   geom_bar(position='dodge', stat='identity') +
   scale_fill_manual(values= my_palette) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
         panel.background = element_blank(),
         axis.line = element_line(colour = "grey")) +
-  scale_y_continuous(limits = c(0,1500)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   ggtitle(label = paste0("Cell cycle phase by cluster ")) +
   facet_wrap(~cluster, scales='free_x')
 
@@ -152,20 +165,34 @@ metadata %>%
   count(population, cluster) %>% 
   arrange(cluster, population) -> a
 
-ggplot(a, aes(fill=population, y=n, x=cluster)) +
+metadata %>% 
+  count(population, cluster) %>% 
+  arrange(cluster, population) %>% 
+  mutate(pct_total = n / sum(n) * 100) -> a
+
+clus <- seq(0,10,1)
+Metadata_final <- NULL
+for (i in clus) {
+  inter <- a[which(a$cluster %in% i),]
+  inter <- inter %>% 
+    mutate(pct_cluster = n / sum(n) * 100)
+  Metadata_final <- rbind(Metadata_final, inter)
+}
+
+ggplot(Metadata_final, aes(fill=population, y=pct_cluster, x=cluster)) +
   geom_bar(position='dodge', stat='identity') +
   scale_fill_manual(values= my_palette) +
   theme_minimal() +
-  scale_y_continuous(limits = c(0,1200)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   ggtitle(label = "Population by cluster")
 
-ggplot(a, aes(fill=population, y=n, x=population)) +
+ggplot(Metadata_final, aes(fill=population, y=pct_cluster, x=population)) +
   geom_bar(position='dodge', stat='identity') +
   theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
         panel.background = element_blank(),
         axis.line = element_line(colour = "grey")) +
   scale_fill_manual(values= my_palette) +
-  scale_y_continuous(limits = c(0,1200)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   ggtitle(label = paste0("Population by cluster")) +
   facet_wrap(~cluster, scales='free_x')
 
