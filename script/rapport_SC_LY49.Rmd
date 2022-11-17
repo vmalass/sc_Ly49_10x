@@ -1,0 +1,419 @@
+---
+title: "Single Cell LY49"
+author: "Malassigne_Victor"
+date: "11/15/2022"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+---
+
+# 1 Library  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = T, fig.height=9, fig.width=9, fig.align="center")
+library(Seurat)
+library(dplyr)
+library(khroma)
+library(future) # parallelization in Seurat (NormalizeData() / ScaleData() / 
+                # JackStraw() / FindMarkers() / FindIntegrationAnchors() / 
+                # FindClusters() - if clustering over multiple resolutions)
+library(clustree)
+library(ggplot2)
+library(openxlsx)
+library(tidyr)
+```
+
+# 2 import data  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+rm(list = ls())
+plan("multiprocess", workers = 9) # activate parallelization
+
+Singlet_norm <- readRDS("~/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
+Singlet_norm.markers_befor <- read.xlsx("~/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_befor_clusterization.xlsx")
+Singlet_norm.markers_after <- read.xlsx("~/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization.xlsx")
+
+my_palette = c("Naive"= "#AA4499",
+               "Ly49n"= "#332288",
+               "VV-B8R"= "#DDCC77",
+               "Ly49p-CD8ab"= "#117733",
+               "Ly49p-CD8aa"= "#88CCEE",
+               "VV-Ly49p-CD8ab"= "#999933",
+               "VV-Ly49p-CD8aa"= "#882255",
+               "G1" = "salmon2",
+               "G2M" = "green4",
+               "S" = "dodgerblue")
+```
+
+# 3 PCA UMAP cluster DE  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+### PCA ####
+DimPlot(Singlet_norm,
+        reduction = "pca",
+        group.by = "HTO_maxID",
+        pt.size = 1,
+        cols = my_palette)+
+  labs(color = "legend ")+
+  ggtitle(label = "PCA")
+
+### UMAP ###
+DimPlot(Singlet_norm, 
+        reduction = "umap",
+        group.by = "HTO_maxID", 
+        pt.size = 1, 
+        cols = my_palette,
+        label = T) +
+  labs(color = "Legend :") +
+  ggtitle(label = paste0("UMAP 11 CP"))
+
+### UMAP cluster ###
+DimPlot(Singlet_norm, 
+        reduction = "umap",
+        group.by = "SCT_snn_res.0.5", 
+        pt.size = 1,
+        label = T)+
+  labs(color = "legend ")+
+  ggtitle(label = paste0( "UMAP 11 CP et resolution : 0.5"))
+
+### DE ###
+###### Population ###### 
+Singlet_norm.markers_befor %>%
+  group_by(cluster) %>%
+  top_n(n = 10, wt = avg_log2FC) -> top10
+
+DoHeatmap(Singlet_norm, features = top10$gene) + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE entre les différentes populations")
+
+###### Cluster ###### 
+Singlet_norm.markers_after %>%
+  group_by(cluster) %>%
+  top_n(n = 10, wt = avg_log2FC) -> top10
+
+DoHeatmap(Singlet_norm, features = top10$gene, group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE entre les différents clusters")
+```
+
+# 4 DE
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+### population ###
+DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+                                    group.by = "HTO_maxID", 
+                                    ident.1 = "Ly49p-CD8aa", 
+                                    ident.2 = "Ly49p-CD8ab", 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+                                    group.by = "HTO_maxID", 
+                                    ident.1 = "VV-Ly49p-CD8aa", 
+                                    ident.2 = "VV-Ly49p-CD8ab", 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+                                    group.by = "HTO_maxID", 
+                                    ident.1 = "Ly49p-CD8aa", 
+                                    ident.2 = "VV-Ly49p-CD8aa", 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+                                    group.by = "HTO_maxID", 
+                                    ident.1 = "Ly49p-CD8ab", 
+                                    ident.2 = "VV-Ly49p-CD8ab", 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+
+### cluster ###
+DE_1_vs_2 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 1, 
+                                    ident.2 = 2, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_1_vs_4 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 1, 
+                                    ident.2 = 4, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_1_vs_2_4 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 1, 
+                                    ident.2 = c(2,4), 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_2_vs_4 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 2, 
+                                    ident.2 = 4, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_0_vs_1 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 0, 
+                                    ident.2 = 1, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_0_vs_2 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 0, 
+                                    ident.2 = 2, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_0_vs_4 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 0, 
+                                    ident.2 = 4, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_0_vs_7 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 0, 
+                                    ident.2 = 7, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_0_vs_1_2_4_7 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 0, 
+                                    ident.2 = c(1,2,4,7), 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+### population ###
+DoHeatmap(Singlet_norm, features = rownames(DE_LY49p_CD8aa_vs_ab), group.by = "HTO_maxID") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE LY49p_CD8aa_vs_ab")
+
+### cluster ###
+par(mfrow = c(3, 3))
+DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_2), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 1_vs_2")
+DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_4), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 1_vs_4")
+DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_2_4), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 1_vs_2_4")
+# DoHeatmap(Singlet_norm, features = rownames(DE_2_vs_4), group.by = "SCT_snn_res.0.5") + 
+#   NoLegend() +
+#   ggtitle(label = "Heatmaps du DE 2_vs_4")
+DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_1), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 0_vs_1")
+DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_2), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 0_vs_2")
+DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_4), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 0_vs_4")
+DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_7), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 0_vs_7")
+DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_1_2_4_7), group.by = "SCT_snn_res.0.5") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE 0_vs_1_2_4_7")
+
+```
+
+# 5 Classify cells as G2/M, S, or alternatively G1  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# A list of cell cycle markers, from Tirosh et al, 2015, is loaded with Seurat.  We can
+# segregate this list into markers of G2/M phase and markers of S phase
+s.genes <- cc.genes$s.genes
+s.genes <- tolower(s.genes)
+firstup <- function(x) {
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+s.genes <- firstup(s.genes)
+g2m.genes <- cc.genes$g2m.genes
+g2m.genes <- tolower(g2m.genes)
+g2m.genes <- firstup(g2m.genes)
+
+
+Singlet_norm <- CellCycleScoring(Singlet_norm,
+                               s.features = s.genes,
+                               g2m.features = g2m.genes,
+                               set.ident = TRUE)
+```
+
+## 5.1 Visualization  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+DimPlot(Singlet_norm, 
+        reduction = "umap", 
+        group.by = "Phase",
+        pt.size = 1,
+        cols = my_palette) +
+  ggtitle(label = "Cell Cycle Phase")
+
+# Visualize the distribution of cell cycle markers across
+RidgePlot(Singlet_norm, features = c("Pcna", "Top2a", "Mcm6", "Mki67"), ncol = 2, cols = my_palette)
+```
+
+# 6 Creat metadata  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+metadata <- as.data.frame(Singlet_norm@meta.data[["HTO_maxID"]])
+metadata <- cbind(metadata,as.data.frame(Singlet_norm@meta.data[["Phase"]]))
+metadata <- cbind(metadata, as.data.frame(Singlet_norm@meta.data[["SCT_snn_res.0.5"]]))
+colnames(metadata)<- c("population","phase","cluster")
+```
+
+## 6.1 Visualization Cell cycle phase by cluster  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>% 
+  count(cluster, phase) %>% 
+  arrange(cluster, phase) %>% 
+  mutate(pct_total = n / sum(n) * 100) -> a
+
+clus <- seq(0,10,1)
+Metadata_final <- NULL
+for (i in clus) {
+  inter <- a[which(a$cluster %in% i),]
+  inter <- inter %>% 
+    mutate(pct_cluster = n / sum(n) * 100)
+  Metadata_final <- rbind(Metadata_final, inter)
+}
+
+### percent ###
+ggplot(Metadata_final, aes(fill = phase, y = pct_cluster, x = cluster)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  ggtitle(label = "Cell cycle phase by cluster")
+
+ggplot(Metadata_final, aes(fill=phase, y=pct_cluster, x=phase)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  ggtitle(label = paste0("Cell cycle phase by cluster in percent")) +
+  facet_wrap(~cluster, scales='free_x')
+
+### absolute ###
+ggplot(Metadata_final, aes(fill = phase, y = n, x = cluster)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_continuous(limits = c(0,1500)) +
+  ggtitle(label = "Cell cycle phase by cluster")
+
+ggplot(Metadata_final, aes(fill=phase, y=n, x=phase)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_y_continuous(limits = c(0,1500)) +
+  ggtitle(label = paste0("Cell cycle phase by cluster ")) +
+  facet_wrap(~cluster, scales='free_x')
+```
+
+## 6.2 Visualization population by cluster  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+metadata %>% 
+  count(population, cluster) %>% 
+  arrange(cluster, population) %>% 
+  mutate(pct_total = n / sum(n) * 100) -> a
+
+clus <- seq(0,10,1)
+Metadata_final <- NULL
+for (i in clus) {
+  inter <- a[which(a$cluster %in% i),]
+  inter <- inter %>% 
+    mutate(pct_cluster = n / sum(n) * 100)
+  Metadata_final <- rbind(Metadata_final, inter)
+}
+
+### percent ###
+ggplot(Metadata_final, aes(fill=population, y=pct_cluster, x=cluster)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  ggtitle(label = "Population by cluster")
+
+ggplot(Metadata_final, aes(fill=population, y=pct_cluster, x=population)) +
+  geom_bar(position='dodge', stat='identity') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_fill_manual(values= my_palette) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  ggtitle(label = paste0("Population by cluster in percent")) +
+  facet_wrap(~cluster, scales='free_x')
+
+### Absolute ###
+ggplot(Metadata_final, aes(fill=population, y=n, x=cluster)) +
+  geom_bar(position='dodge', stat='identity') +
+  scale_fill_manual(values= my_palette) +
+  theme_minimal() +
+  scale_y_continuous(limits = c(0,1200)) +
+  ggtitle(label = "Population by cluster")
+
+ggplot(Metadata_final, aes(fill=population, y=n, x=population)) +
+  geom_bar(position='dodge', stat='identity') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1.05, hjust=1),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "grey")) +
+  scale_fill_manual(values= my_palette) +
+  scale_y_continuous(limits = c(0,1200)) +
+  ggtitle(label = paste0("Population by cluster")) +
+  facet_wrap(~cluster, scales='free_x')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
