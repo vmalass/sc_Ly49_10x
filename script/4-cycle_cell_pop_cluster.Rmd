@@ -107,7 +107,7 @@ RidgePlot(Singlet_norm, features = c("Pcna", "Top2a", "Mcm6", "Mki67"), ncol = 2
 
 # 5 Creat metadata  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-metadata <- as.data.frame(Singlet_norm@meta.data[["orig.ident"]])
+metadata <- as.data.frame(Singlet_norm@meta.data[["HTO_maxID"]])
 metadata <- cbind(metadata,as.data.frame(Singlet_norm@meta.data[["Phase"]]))
 metadata <- cbind(metadata, as.data.frame(Singlet_norm@meta.data[["SCT_snn_res.0.5"]]))
 colnames(metadata)<- c("population","phase","cluster")
@@ -161,10 +161,6 @@ ggplot(Metadata_final, aes(fill=phase, y=pct_cluster, x=phase)) +
 
 ## 5.2 Visualization Cell cycle phase by cluster
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-metadata %>% 
-  count(population, cluster) %>% 
-  arrange(cluster, population) -> a
-
 metadata %>% 
   count(population, cluster) %>% 
   arrange(cluster, population) %>% 

@@ -91,25 +91,25 @@ Idents(Singlet_norm) <- condition$`Singlet_norm@meta.data[["HTO_maxID"]]`  # rev
 levels(Singlet_norm)
 
 ###### DE ###### 
-Singlet_norm.markers <- FindAllMarkers(Singlet_norm, 
+Singlet_norm.markers_befor <- FindAllMarkers(Singlet_norm, 
                                        only.pos = F, 
-                                       min.pct = 0.1, 
+                                       min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                        logfc.threshold = 0.5,
-                                       min.diff.pct = 0.25)
+                                       min.diff.pct = 0.25) 
 
 ###### save xlsx ###### 
-write.xlsx(Singlet_norm.markers, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_befor_clusterization.xlsx")
+# write.xlsx(Singlet_norm.markers_befor, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_befor_clusterization.xlsx")
 
 ###### Visualization ###### 
-Singlet_norm.markers %>%
+Singlet_norm.markers_befor %>%
   group_by(cluster) %>%
   slice_max(n = 2, order_by = avg_log2FC)
 
-Singlet_norm.markers %>%
+Singlet_norm.markers_befor %>%
   group_by(cluster) %>%
-  top_n(n = 20, wt = avg_log2FC) -> top20
+  top_n(n = 10, wt = avg_log2FC) -> top10
 
-DoHeatmap(Singlet_norm, features = top20$gene) + 
+DoHeatmap(Singlet_norm, features = top10$gene) + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE entre les différentes population")
 ```
@@ -136,21 +136,21 @@ DimPlot(Singlet_norm,
 levels(Singlet_norm)
 
 ###### DE ###### 
-Singlet_norm.markers <- FindAllMarkers(Singlet_norm, 
+Singlet_norm.markers_after <- FindAllMarkers(Singlet_norm, 
                                        only.pos = F, 
                                        min.pct = 0.1, 
                                        logfc.threshold = 0.5,
                                        min.diff.pct = 0.25)
 
 ###### save xlsx ###### 
-write.xlsx(Singlet_norm.markers, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization.xlsx")
+# write.xlsx(Singlet_norm.markers_after, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization.xlsx")
 
 ###### Visualization ###### 
-Singlet_norm.markers %>%
+Singlet_norm.markers_after %>%
   group_by(cluster) %>%
   slice_max(n = 2, order_by = avg_log2FC)
 
-Singlet_norm.markers %>%
+Singlet_norm.markers_after %>%
   group_by(cluster) %>%
   top_n(n = 10, wt = avg_log2FC) -> top10
 
@@ -161,7 +161,7 @@ DoHeatmap(Singlet_norm, features = top10$gene) +
 
 # Save seurat objet
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-saveRDS(Singlet_norm, "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/data/Singlet_norm_3.RDS")
+#saveRDS(Singlet_norm, "/Users/victor/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
 ```
 
 
