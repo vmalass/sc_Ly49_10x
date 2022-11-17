@@ -21,6 +21,12 @@ library(clustree)
 library(ggplot2)
 library(openxlsx)
 library(tidyr)
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+if (!require('org.Mm.eg.db')) BiocManager::install('org.Mm.eg.db'); library('org.Mm.eg.db')
+if (!require('AnnotationDbi')) BiocManager::install('AnnotationDbi'); library('AnnotationDbi')
+if (!require('enrichplot')) BiocManager::install('enrichplot'); library('enrichplot')
+if (!require('clusterProfiler')) BiocManager::install('clusterProfiler'); library('clusterProfiler')
+if (!require('ReactomePA')) BiocManager::install('ReactomePA'); library('ReactomePA')
 ```
 
 # 2 import data  
@@ -105,7 +111,7 @@ DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm,
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
                                     min.diff.pct = 0.25)
-DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+DE_VV_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
                                     group.by = "HTO_maxID", 
                                     ident.1 = "VV-Ly49p-CD8aa", 
                                     ident.2 = "VV-Ly49p-CD8ab", 
@@ -113,7 +119,7 @@ DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm,
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
                                     min.diff.pct = 0.25)
-DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+DE_LY49p_CD8aa_vs_VV_aa <- FindMarkers(Singlet_norm, 
                                     group.by = "HTO_maxID", 
                                     ident.1 = "Ly49p-CD8aa", 
                                     ident.2 = "VV-Ly49p-CD8aa", 
@@ -121,7 +127,7 @@ DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm,
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
                                     min.diff.pct = 0.25)
-DE_LY49p_CD8aa_vs_ab <- FindMarkers(Singlet_norm, 
+DE_LY49p_CD8ab_vs_VV_ab <- FindMarkers(Singlet_norm, 
                                     group.by = "HTO_maxID", 
                                     ident.1 = "Ly49p-CD8ab", 
                                     ident.2 = "VV-Ly49p-CD8ab", 
@@ -151,14 +157,6 @@ DE_1_vs_2_4 <- FindMarkers(Singlet_norm,
                                     group.by = "SCT_snn_res.0.5", 
                                     ident.1 = 1, 
                                     ident.2 = c(2,4), 
-                                    only.pos = F, 
-                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
-                                    logfc.threshold = 0.5,
-                                    min.diff.pct = 0.25)
-DE_2_vs_4 <- FindMarkers(Singlet_norm, 
-                                    group.by = "SCT_snn_res.0.5", 
-                                    ident.1 = 2, 
-                                    ident.2 = 4, 
                                     only.pos = F, 
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
@@ -203,16 +201,78 @@ DE_0_vs_1_2_4_7 <- FindMarkers(Singlet_norm,
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
                                     min.diff.pct = 0.25)
-```
 
+DE_5_vs_8 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 5, 
+                                    ident.2 = 8, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+#### Cluster 4 vrai ou faux cluster ####
+DE_4_vs_1 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 4, 
+                                    ident.2 = 1, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_4_vs_2 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 4, 
+                                    ident.2 = 2, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_4_vs_1_2 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 4, 
+                                    ident.2 = c(1,2), 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_4_vs_7 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 4, 
+                                    ident.2 = 7, 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+DE_4_vs_1_2_7 <- FindMarkers(Singlet_norm, 
+                                    group.by = "SCT_snn_res.0.5", 
+                                    ident.1 = 4, 
+                                    ident.2 = c(1,2,7), 
+                                    only.pos = F, 
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+```
+  
+Pas de DE entre le cluster 2 et 4 hypothèse d'une over clusterisation mais le DE entre le cluster 5 et 8 identifie 349 gènes  
+Peut être refaire avec une résolution de 0.4 et non 0.5 (cf Clustree) par rapport à la segmentation de la population LY49 infectée par VV  
+Question : Cluster 4 vrai ou faux cluster....  
+  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ### population ###
 DoHeatmap(Singlet_norm, features = rownames(DE_LY49p_CD8aa_vs_ab), group.by = "HTO_maxID") + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE LY49p_CD8aa_vs_ab")
+DoHeatmap(Singlet_norm, features = rownames(DE_LY49p_CD8aa_vs_VV_aa), group.by = "HTO_maxID") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE LY49p_CD8aa_vs_VV_aa")
+DoHeatmap(Singlet_norm, features = rownames(DE_LY49p_CD8ab_vs_VV_ab), group.by = "HTO_maxID") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE LY49p_CD8ab_vs_VV_ab")
+DoHeatmap(Singlet_norm, features = rownames(DE_VV_LY49p_CD8aa_vs_ab), group.by = "HTO_maxID") + 
+  NoLegend() +
+  ggtitle(label = "Heatmaps du DE VV_LY49p_CD8aa_vs_ab")
 
 ### cluster ###
-par(mfrow = c(3, 3))
 DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_2), group.by = "SCT_snn_res.0.5") + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE 1_vs_2")
@@ -222,9 +282,6 @@ DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_4), group.by = "SCT_snn_res.
 DoHeatmap(Singlet_norm, features = rownames(DE_1_vs_2_4), group.by = "SCT_snn_res.0.5") + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE 1_vs_2_4")
-# DoHeatmap(Singlet_norm, features = rownames(DE_2_vs_4), group.by = "SCT_snn_res.0.5") + 
-#   NoLegend() +
-#   ggtitle(label = "Heatmaps du DE 2_vs_4")
 DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_1), group.by = "SCT_snn_res.0.5") + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE 0_vs_1")
@@ -240,7 +297,6 @@ DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_7), group.by = "SCT_snn_res.
 DoHeatmap(Singlet_norm, features = rownames(DE_0_vs_1_2_4_7), group.by = "SCT_snn_res.0.5") + 
   NoLegend() +
   ggtitle(label = "Heatmaps du DE 0_vs_1_2_4_7")
-
 ```
 
 # 5 Classify cells as G2/M, S, or alternatively G1  
@@ -392,28 +448,440 @@ ggplot(Metadata_final, aes(fill=population, y=n, x=population)) +
   facet_wrap(~cluster, scales='free_x')
 ```
 
+# 7 Enrichment  
+## 7.1 Enrichment with single DE genes per cluster  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+clus <- seq(0,6,1)
+# par(mfrow = c(2,2))
+for (i in clus) {
+  inter <- Singlet_norm.markers_after[which(Singlet_norm.markers_after$cluster %in% i),]
+  # print(unique(inter))
+  
+  # KEGG -------------------------------------------------------------------------
+  geneListEntrez = mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENTREZID", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  Kres <- enrichKEGG(gene         = geneListEntrez,
+                     organism     = "mmu",
+                    pAdjustMethod = "BH",
+                    minGSSize    = 3,
+                    pvalueCutoff  = 0.05, # slider
+                    qvalueCutoff  = 0.05) # slider
+  
+  # Kresmat = as.matrix(Kres[])
+  
+  plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for cluster ", i))
+  plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for cluster ", i))
+  
+  # GO ---------------------------------------------------------------------------
+  geneListEnsembl= mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENSEMBL", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  enrichedRes_GO  <- enrichGO(
+    gene          = geneListEnsembl,
+    keyType       = "ENSEMBL",
+    OrgDb         = org.Mm.eg.db,
+    ont           = "BP",
+    pAdjustMethod = "BH",
+    minGSSize    = 3,
+    pvalueCutoff  = 0.05, # slider
+    qvalueCutoff  = 0.05,# slider
+    readable      = TRUE)
+  
+  # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+  
+  plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for cluster ", i))
+  plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for cluster ", i))
 
+  # REACTOM_PA--------------------------------------------------------------------
+  geneListEntrez_PA = mapIds(org.Mm.eg.db, 
+                             keys=inter$gene, 
+                             column="ENTREZID", 
+                             keytype="SYMBOL", 
+                             multiVals="first")
+  
+  enrichedRes_GS <- enrichPathway(gene = geneListEntrez_PA,
+                                  organism = 'mouse',
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+  
+  # enrichedRes_GS_mat = as.matrix(enrichedRes_GS[])
+  
+  plot3 <- barplot(enrichedRes_GS, showCategory=15, orderby="x") + ggtitle(paste0("Barplot of functional enrichment by REACTOM_PA for cluster", i))
+  plot4 <- dotplot(enrichedRes_GS, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by REACTOM_PA for cluster", i))
+  
+  # print(plot5)
+  print(plot6)
+  # print(plot1)
+  print(plot2)
+  # print(plot3)
+  print(plot4)
+}
 
+clus <- 7
+for (i in clus) {
+  print(i)
+  inter <- Singlet_norm.markers_after[which(Singlet_norm.markers_after$cluster %in% i),]
+  # print(unique(inter))
+  
+  # KEGG -------------------------------------------------------------------------
+  geneListEntrez = mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENTREZID", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  Kres <- enrichKEGG(gene         = geneListEntrez,
+                     organism     = "mmu",                                  
+                     pAdjustMethod = "BH",
+                     minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+  
+  # Kresmat = as.matrix(Kres[])
+  
+  plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for cluster ", i))
+  plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for cluster ", i))
+  
+  # GO ---------------------------------------------------------------------------
+  geneListEnsembl= mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENSEMBL", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  enrichedRes_GO  <- enrichGO(
+    gene          = geneListEnsembl,
+    keyType       = "ENSEMBL",
+    OrgDb         = org.Mm.eg.db,
+    ont = "BP",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05,
+    readable      = TRUE)
+  
+  # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+  
+  plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for cluster ", i))
+  plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for cluster ", i))
 
+  # print(plot5)
+  print(plot6)
+  # print(plot1)
+  print(plot2)
+}
 
+clus <- seq(8,10,1)
+# par(mfrow = c(2,2))
+for (i in clus) {
+  print(i)
+  inter <- Singlet_norm.markers_after[which(Singlet_norm.markers_after$cluster %in% i),]
+  # print(unique(inter))
+  
+  # KEGG -------------------------------------------------------------------------
+  geneListEntrez = mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENTREZID", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  Kres <- enrichKEGG(gene         = geneListEntrez,
+                     organism     = "mmu",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+  
+  # Kresmat = as.matrix(Kres[])
+  
+  plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for cluster ", i))
+  plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for cluster ", i))
+  
+  # GO ---------------------------------------------------------------------------
+  geneListEnsembl= mapIds(org.Mm.eg.db, 
+                          keys=inter$gene, 
+                          column="ENSEMBL", 
+                          keytype="SYMBOL", 
+                          multiVals="first")
+  
+  enrichedRes_GO  <- enrichGO(
+    gene          = geneListEnsembl,
+    keyType       = "ENSEMBL",
+    OrgDb         = org.Mm.eg.db,
+    ont           = "BP",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05,
+    readable      = TRUE)
+  
+  # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+  
+  plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for cluster ", i))
+  plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for cluster ", i))
 
+  # REACTOM_PA--------------------------------------------------------------------
+  geneListEntrez_PA = mapIds(org.Mm.eg.db, 
+                             keys=inter$gene, 
+                             column="ENTREZID", 
+                             keytype="SYMBOL", 
+                             multiVals="first")
+  
+  enrichedRes_GS <- enrichPathway(gene = geneListEntrez_PA,
+                                  organism = 'mouse',
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+  
+  # enrichedRes_GS_mat = as.matrix(enrichedRes_GS[])
+  
+  plot3 <- barplot(enrichedRes_GS, showCategory=15, orderby="x") + ggtitle(paste0("Barplot of functional enrichment by REACTOM_PA for cluster", i))
+  plot4 <- dotplot(enrichedRes_GS, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by REACTOM_PA for cluster", i))
 
+  # print(plot5)
+  print(plot6)
+  # print(plot1)
+  print(plot2)
+  # print(plot3)
+  print(plot4)
+}
+```
 
+## 7.2 Enrichment with gene DE population vs population  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+pop <- list(DE_LY49p_CD8aa_vs_ab,DE_LY49p_CD8aa_vs_VV_aa,DE_LY49p_CD8ab_vs_VV_ab,DE_VV_LY49p_CD8aa_vs_ab)
+namepop <- c("DE_LY49p_CD8aa_vs_ab","DE_LY49p_CD8aa_vs_VV_aa","DE_LY49p_CD8ab_vs_VV_ab","DE_VV_LY49p_CD8aa_vs_ab")
+print(namepop)
+for (i in pop) {
+    # KEGG -------------------------------------------------------------------------
+    geneListEntrez = mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENTREZID", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    Kres <- enrichKEGG(gene         = geneListEntrez,
+                       organism     = "mmu",
+                                                         pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    # Kresmat = as.matrix(Kres[])
+    
+    plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for population "))
+    plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for population "))
+    
+    # GO ---------------------------------------------------------------------------
+    geneListEnsembl= mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENSEMBL", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    enrichedRes_GO  <- enrichGO(
+      gene          = geneListEnsembl,
+      keyType       = "ENSEMBL",
+      OrgDb         = org.Mm.eg.db,
+      ont           = "BP",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05,
+      readable      = TRUE)
+    
+    # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+    
+    plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for population "))
+    plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for population "))
+  
+    # REACTOM_PA--------------------------------------------------------------------
+    geneListEntrez_PA = mapIds(org.Mm.eg.db, 
+                               keys=rownames(i), 
+                               column="ENTREZID", 
+                               keytype="SYMBOL", 
+                               multiVals="first")
+    
+    enrichedRes_GS <- enrichPathway(gene = geneListEntrez_PA,
+                                    organism = 'mouse',
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    enrichedRes_GS_mat = as.matrix(enrichedRes_GS[])
+    
+    plot3 <- barplot(enrichedRes_GS, showCategory=15, orderby="x") + ggtitle(paste0("Barplot of functional enrichment by REACTOM_PA for population"))
+    plot4 <- dotplot(enrichedRes_GS, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by REACTOM_PA for population"))
+    
+    # print(plot5)
+    print(plot6)
+    # print(plot1)
+    print(plot2)
+    # print(plot3)
+    print(plot4)
+}
+```
 
+## 7.3 Enrichment with gene DE cluster vs cluster  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+clus <- list(DE_1_vs_2,DE_1_vs_4,DE_1_vs_2_4,DE_0_vs_1,DE_0_vs_2,DE_0_vs_4,DE_0_vs_1_2_4_7)
+nameclus <- c("DE_1_vs_2","DE_1_vs_4","DE_1_vs_2_4","DE_0_vs_1","DE_0_vs_2","DE_0_vs_4","DE_0_vs_1_2_4_7")
+print(nameclus)
 
+for (i in clus) {
+    # KEGG -------------------------------------------------------------------------
+    geneListEntrez = mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENTREZID", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    Kres <- enrichKEGG(gene         = geneListEntrez,
+                       organism     = "mmu",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    # Kresmat = as.matrix(Kres[])
+    
+    plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for cluster "))
+    plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for cluster "))
+    
+    # GO ---------------------------------------------------------------------------
+    geneListEnsembl= mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENSEMBL", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    enrichedRes_GO  <- enrichGO(
+      gene          = geneListEnsembl,
+      keyType       = "ENSEMBL",
+      OrgDb         = org.Mm.eg.db,
+      ont           = "BP",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05,
+      readable      = TRUE)
+    
+    # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+    
+    plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for cluster "))
+    plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for cluster "))
+  
+    # REACTOM_PA--------------------------------------------------------------------
+    geneListEntrez_PA = mapIds(org.Mm.eg.db, 
+                               keys=rownames(i), 
+                               column="ENTREZID", 
+                               keytype="SYMBOL", 
+                               multiVals="first")
+    
+    enrichedRes_GS <- enrichPathway(gene = geneListEntrez_PA,
+                                    organism = 'mouse',
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    # enrichedRes_GS_mat = as.matrix(enrichedRes_GS[])
+    
+    plot3 <- barplot(enrichedRes_GS, showCategory=15, orderby="x") + ggtitle(paste0("Barplot of functional enrichment by REACTOM_PA for cluster"))
+    plot4 <- dotplot(enrichedRes_GS, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by REACTOM_PA for cluster"))
+    
+    # print(plot5)
+    print(plot6)
+    # print(plot1)
+    print(plot2)
+    # print(plot3)
+    print(plot4)
+}
 
+clus <- list(DE_0_vs_7)
+nameclus <- c("DE_0_vs_7")
+print(nameclus)
 
-
-
-
-
-
-
-
-
-
-
-
-
+for (i in clus) {
+    # KEGG -------------------------------------------------------------------------
+    geneListEntrez = mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENTREZID", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    Kres <- enrichKEGG(gene         = geneListEntrez,
+                       organism     = "mmu",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    # Kresmat = as.matrix(Kres[])
+    
+    plot5 <- barplot(Kres, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by KEGG for cluster "))
+    plot6 <- dotplot(Kres, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by KEGG for cluster "))
+    
+    # GO ---------------------------------------------------------------------------
+    geneListEnsembl= mapIds(org.Mm.eg.db, 
+                            keys=rownames(i), 
+                            column="ENSEMBL", 
+                            keytype="SYMBOL", 
+                            multiVals="first")
+    
+    enrichedRes_GO  <- enrichGO(
+      gene          = geneListEnsembl,
+      keyType       = "ENSEMBL",
+      OrgDb         = org.Mm.eg.db,
+      ont           = "BP",
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05,
+      readable      = TRUE)
+    
+    # enrichedRes_GO_mat = as.matrix(enrichedRes_GO[])
+    
+    plot1 <- barplot(enrichedRes_GO, showCategory=15, order=T) + ggtitle(paste0("Barplot of functional enrichment by GO for cluster "))
+    plot2 <- dotplot(enrichedRes_GO, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by GO for cluster "))
+  
+    # REACTOM_PA--------------------------------------------------------------------
+    geneListEntrez_PA = mapIds(org.Mm.eg.db, 
+                               keys=rownames(i), 
+                               column="ENTREZID", 
+                               keytype="SYMBOL", 
+                               multiVals="first")
+    
+    enrichedRes_GS <- enrichPathway(gene = geneListEntrez_PA,
+                                    organism = 'mouse',
+                                  pAdjustMethod = "BH",
+                                  minGSSize    = 3,
+                                  pvalueCutoff  = 0.05, # slider
+                                  qvalueCutoff  = 0.05)
+    
+    # enrichedRes_GS_mat = as.matrix(enrichedRes_GS[])
+    
+    plot3 <- barplot(enrichedRes_GS, showCategory=15, orderby="x") + ggtitle(paste0("Barplot of functional enrichment by REACTOM_PA for cluster"))
+    plot4 <- dotplot(enrichedRes_GS, showCategory=15) + ggtitle(paste0("Dotplot of functional enrichment by REACTOM_PA for cluster"))
+    
+    # print(plot5)
+    # print(plot6)
+    # print(plot1)
+    print(plot2)
+    # print(plot3)
+    print(plot4)
+}
+```
 
 
