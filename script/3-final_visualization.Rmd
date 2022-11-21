@@ -122,13 +122,13 @@ Singlet_norm <- FindClusters(Singlet_norm,
 clustree(Singlet_norm, prefix = "SCT_snn_res.") + 
   ggtitle(label = "Clustree avec 11 CP")
 
-Singlet_norm <- FindClusters(Singlet_norm, resolution = 0.5)
+Singlet_norm <- FindClusters(Singlet_norm, resolution = 0.4)
 Singlet_norm <- RunUMAP(Singlet_norm, dims = 1:11, assay = "SCT")
 DimPlot(Singlet_norm, 
         reduction = "umap", 
         pt.size = 1,
         label = T)+
-  ggtitle(label = paste0( "UMAP 11 CP et resolution : 0.5"))
+  ggtitle(label = paste0( "UMAP 11 CP et resolution : 0.4"))
 ```
 
 # DE after clusterization  
@@ -143,7 +143,7 @@ Singlet_norm.markers_after <- FindAllMarkers(Singlet_norm,
                                        min.diff.pct = 0.25)
 
 ###### save xlsx ###### 
-# write.xlsx(Singlet_norm.markers_after, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization.xlsx")
+# write.xlsx(Singlet_norm.markers_after, file = "/Users/victor/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization_reso04.xlsx")
 
 ###### Visualization ###### 
 Singlet_norm.markers_after %>%
@@ -161,7 +161,7 @@ DoHeatmap(Singlet_norm, features = top10$gene) +
 
 # Save seurat objet
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-#saveRDS(Singlet_norm, "/Users/victor/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
+# saveRDS(Singlet_norm, "/Users/victor/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
 ```
 
 
