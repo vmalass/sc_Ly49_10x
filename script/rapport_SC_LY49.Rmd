@@ -11,16 +11,7 @@ output:
 # 1 Library  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = T, fig.height=9, fig.width=9, fig.align="center")
-# library(Seurat)
-# # library(dplyr)
-# library(khroma)
-# library(future) # parallelization in Seurat (NormalizeData() / ScaleData() / 
-#                 # JackStraw() / FindMarkers() / FindIntegrationAnchors() / 
-#                 # FindClusters() - if clustering over multiple resolutions)
-# library(clustree)
-# library(ggplot2)
-# library(openxlsx)
-# library(tidyr)
+
 if (!require('Seurat')) install.packages('Seurat'); library('Seurat')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('khroma')) install.packages('khroma'); library('khroma')
@@ -35,6 +26,7 @@ if (!require('AnnotationDbi')) BiocManager::install('AnnotationDbi'); library('A
 if (!require('enrichplot')) BiocManager::install('enrichplot'); library('enrichplot')
 if (!require('clusterProfiler')) BiocManager::install('clusterProfiler'); library('clusterProfiler')
 if (!require('ReactomePA')) BiocManager::install('ReactomePA'); library('ReactomePA')
+if (!require('AUCell')) BiocManager::install('AUCell'); library('AUCell')
 ```
 
 # 2 import data  
@@ -61,8 +53,8 @@ my_palette = c("Naive"= "#AA4499",
   
 DE avec une résolition de 0.5, 11 clusters et 1976 gènes.  
 DE avec une résolition de 0.4, 9 clusters et 1448 gènes.  
-  
-# 3 PCA UMAP cluster DE  
+
+# 3 PCA UMAP cluster DE
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ### PCA ####
 DimPlot(Singlet_norm,
@@ -74,124 +66,163 @@ DimPlot(Singlet_norm,
   ggtitle(label = "PCA")
 
 ### UMAP ###
-DimPlot(Singlet_norm, 
+DimPlot(Singlet_norm,
         reduction = "umap",
-        group.by = "HTO_maxID", 
-        pt.size = 1, 
+        group.by = "HTO_maxID",
+        pt.size = 1,
         cols = my_palette,
         label = T) +
   labs(color = "Legend :") +
   ggtitle(label = paste0("UMAP 11 CP"))
 
 ### UMAP cluster ###
-DimPlot(Singlet_norm, 
+DimPlot(Singlet_norm,
         reduction = "umap",
-        group.by = "SCT_snn_res.0.4", 
+        group.by = "SCT_snn_res.0.4",
         pt.size = 1,
         label = T)+
   labs(color = "legend ")+
   ggtitle(label = paste0( "UMAP 11 CP et resolution : 0.4"))
 
+### UMAP with Gzmm ###
+FeaturePlot(Singlet_norm, features = "Gzmm")
+### UMAP with Klrb1c ###
+FeaturePlot(Singlet_norm, features = "Klrb1c")
+
+FeaturePlot(Singlet_norm, features = "Tcrg-C1")
+FeaturePlot(Singlet_norm, features = "Tcrg-C2")
+FeaturePlot(Singlet_norm, features = "Tcrg-C3")
+FeaturePlot(Singlet_norm, features = "Tcrg-V1")
+FeaturePlot(Singlet_norm, features = "Tcrg-V3")
+FeaturePlot(Singlet_norm, features = "Tcrg-V4")
+FeaturePlot(Singlet_norm, features = "Tcrg-V6")
+
+FeaturePlot(Singlet_norm, features = "Fcgrt")
+FeaturePlot(Singlet_norm, features = "Fcer1g")
+
+FeaturePlot(Singlet_norm, features = "Cxcr5")
+FeaturePlot(Singlet_norm, features = "Klrd1")
+FeaturePlot(Singlet_norm, features = "Klrc1")
+FeaturePlot(Singlet_norm, features = "H2-Q2")
+FeaturePlot(Singlet_norm, features = "H2-Q4")
+FeaturePlot(Singlet_norm, features = "H2-Q6")
+FeaturePlot(Singlet_norm, features = "H2-Q7")
+FeaturePlot(Singlet_norm, features = "H2-Q10")
+FeaturePlot(Singlet_norm, features = "H2-T23")
+FeaturePlot(Singlet_norm, features = "H2-Aa")
+FeaturePlot(Singlet_norm, features = "H2-Ab1")
+FeaturePlot(Singlet_norm, features = "Tcf7")
+
+	
+
+FeaturePlot(Singlet_norm, features = "Fcgr2b")
+FeaturePlot(Singlet_norm, features = "Fcgr3")
+FeaturePlot(Singlet_norm, features = "Fcgrt")
+FeaturePlot(Singlet_norm, features = "Fcer1g")
+FeaturePlot(Singlet_norm, features = "Cxcr5")
+
 ### DE ###
-###### Population ###### 
+###### Population ######
 Singlet_norm.markers_befor %>%
   group_by(cluster) %>%
   top_n(n = 10, wt = avg_log2FC) -> top10
 
-DoHeatmap(Singlet_norm, features = top10$gene, group.by = "HTO_maxID", group.colors = my_palette) + 
+DoHeatmap(Singlet_norm, features = top10$gene, group.by = "HTO_maxID", group.colors = my_palette) +
   # NoLegend() +
-  ggtitle(label = "Heatmaps du DE entre les différentes populations")
+  ggtitle(label = "Heatmaps du DE top 10 gènes entre les différentes populations")
 
-###### Cluster ###### 
+###### Cluster ######
 Singlet_norm.markers_after %>%
   group_by(cluster) %>%
   top_n(n = 10, wt = avg_log2FC) -> top10
 
-DoHeatmap(Singlet_norm, features = top10$gene, group.by = "SCT_snn_res.0.4") + 
+DoHeatmap(Singlet_norm, features = top10$gene, group.by = "SCT_snn_res.0.4") +
   # NoLegend() +
-  ggtitle(label = "Heatmaps du DE entre les différents clusters")
+  ggtitle(label = "Heatmaps du DE top 10 gènes entre les différents clusters")
 ```
 
 
 
 # DE all
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 namepop <- c("VV-B8R", "Ly49p-CD8ab", "VV-Ly49p-CD8aa", "Ly49p-CD8aa", "VV-Ly49p-CD8ab", "Naive", "Ly49n")
 nameclus <- c("0", "1", "2", "3", "4", "5", "6", "7", "8")
 
 ### population ###
-
-for (i in anamepop) {
-  for (j in namepop) {
+counter = 0
+for (i in namepop) {
+  counter = counter + 1
+  for (j in namepop[counter  : 7]) {
     print(paste0("DE ", i, " vs ", j))
-    c <- FindMarkers(Singlet_norm, 
-                                    group.by = "HTO_maxID", 
-                                    ident.1 = i, 
-                                    ident.2 = j, 
-                                    only.pos = F, 
-                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
-                                    logfc.threshold = 0.5,
-                                    min.diff.pct = 0.25,
-                                    group.colors = my_palette)
-    if (length(t(c)) > 0) {
-      print(c %>% 
-        arrange(-avg_log2FC) %>% 
-        top_n(n = 30, wt = avg_log2FC) )
-      plot <- DoHeatmap(Singlet_norm, features = rownames(c[0:30,]), group.by = "HTO_maxID") + 
-      # NoLegend() +
-      ggtitle(label = paste0("Heatmaps du DE ", i, " vs ", j))
-      print(plot)
-    }
-
-  }
-  
-}
-
-### cluster ###
-for (i in nameclus) {
-  for (j in nameclus) {
-    print(paste0("DE ", i, " vs ", j))
-    c <- FindMarkers(Singlet_norm, 
-                                    group.by = "SCT_snn_res.0.4", 
-                                    ident.1 = i, 
-                                    ident.2 = j, 
-                                    only.pos = F, 
+    c <- FindMarkers(Singlet_norm,
+                                    group.by = "HTO_maxID",
+                                    ident.1 = i,
+                                    ident.2 = j,
+                                    only.pos = F,
                                     min.pct = 0.1, #  diff de 0.1 entre les deux conditions
                                     logfc.threshold = 0.5,
                                     min.diff.pct = 0.25)
     if (length(t(c)) > 0) {
-      print(c %>% 
-        arrange(-avg_log2FC) %>% 
+      print(c %>%
+        arrange(-avg_log2FC) %>%
         top_n(n = 30, wt = avg_log2FC) )
-      plot <- DoHeatmap(Singlet_norm, features = rownames(c[0:30,]), group.by = "SCT_snn_res.0.4") + 
+      plot <- DoHeatmap(Singlet_norm, features = rownames(c[0:30,]), group.by = "HTO_maxID", group.colors = my_palette) +
       # NoLegend() +
       ggtitle(label = paste0("Heatmaps du DE ", i, " vs ", j))
       print(plot)
     }
 
   }
-  
+
+}
+
+### cluster ###
+counter = 0
+for (i in nameclus) {
+  counter = counter + 1
+  for (j in nameclus[counter  : 9]) {
+    print(paste0("DE ", i, " vs ", j))
+    c <- FindMarkers(Singlet_norm,
+                                    group.by = "SCT_snn_res.0.4",
+                                    ident.1 = i,
+                                    ident.2 = j,
+                                    only.pos = F,
+                                    min.pct = 0.1, #  diff de 0.1 entre les deux conditions
+                                    logfc.threshold = 0.5,
+                                    min.diff.pct = 0.25)
+    if (length(t(c)) > 0) {
+      print(c %>%
+        arrange(-avg_log2FC) %>%
+        top_n(n = 30, wt = avg_log2FC) )
+      plot <- DoHeatmap(Singlet_norm, features = rownames(c[0:30,]), group.by = "SCT_snn_res.0.4") +
+      # NoLegend() +
+      ggtitle(label = paste0("Heatmaps du DE ", i, " vs ", j))
+      print(plot)
+    }
+
+  }
+
 }
 
 
-####### TEST volcanoplot ###############
-RESgg <- c %>% 
-  mutate(p_val_col = case_when(p_val >= 0.05 ~ "ns",
-                               avg_log2FC > 0 ~ "up",
-                               avg_log2FC < 0 ~ "down")) %>% 
-  ggplot(aes(x = avg_log2FC, y = -log10(p_val),
-             color = p_val_col)) +
-  geom_point() +
-  scale_color_manual(values = c("gray", "indianred", "palegreen3"),
-                     limits = c("ns", "up", "down")) +
-  geom_hline(yintercept = -log10(0.05),
-             linetype = "dashed") +
-  theme_bw() +
-  theme(legend.position = "none")
-
+# ####### TEST volcanoplot ###############
+# RESgg <- c %>%
+#   mutate(p_val_col = case_when(p_val >= 0.05 ~ "ns",
+#                                avg_log2FC > 0 ~ "up",
+#                                avg_log2FC < 0 ~ "down")) %>%
+#   ggplot(aes(x = avg_log2FC, y = -log10(p_val),
+#              color = p_val_col)) +
+#   geom_point() +
+#   scale_color_manual(values = c("gray", "indianred", "palegreen3"),
+#                      limits = c("ns", "up", "down")) +
+#   geom_hline(yintercept = -log10(0.05),
+#              linetype = "dashed") +
+#   theme_bw() +
+#   theme(legend.position = "none")
+# RESgg
 ```
 
-# 5 Classify cells as G2/M, S, or alternatively G1  
+# 5 Classify cells as G2/M, S, or alternatively G1
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # A list of cell cycle markers, from Tirosh et al, 2015, is loaded with Seurat.  We can
 # segregate this list into markers of G2/M phase and markers of S phase
@@ -213,10 +244,10 @@ Singlet_norm <- CellCycleScoring(Singlet_norm,
                                set.ident = TRUE)
 ```
 
-## 5.1 Visualization  
+## 5.1 Visualization
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-DimPlot(Singlet_norm, 
-        reduction = "umap", 
+DimPlot(Singlet_norm,
+        reduction = "umap",
         group.by = "Phase",
         pt.size = 1,
         cols = my_palette) +
@@ -226,26 +257,26 @@ DimPlot(Singlet_norm,
 RidgePlot(Singlet_norm, features = c("Pcna", "Top2a", "Mcm6", "Mki67"), ncol = 2, cols = my_palette)
 ```
 
-# 6 Creat metadata  
+# 6 Creat metadata
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 metadata <- as.data.frame(Singlet_norm@meta.data[["HTO_maxID"]])
 metadata <- cbind(metadata,as.data.frame(Singlet_norm@meta.data[["Phase"]]))
-metadata <- cbind(metadata, as.data.frame(Singlet_norm@meta.data[["SCT_snn_res.0.5"]]))
+metadata <- cbind(metadata, as.data.frame(Singlet_norm@meta.data[["SCT_snn_res.0.4"]]))
 colnames(metadata)<- c("population","phase","cluster")
 ```
 
-## 6.1 Visualization Cell cycle phase by cluster  
+## 6.1 Visualization Cell cycle phase by cluster
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-metadata %>% 
-  count(cluster, phase) %>% 
-  arrange(cluster, phase) %>% 
+metadata %>%
+  count(cluster, phase) %>%
+  arrange(cluster, phase) %>%
   mutate(pct_total = n / sum(n) * 100) -> a
 
 clus <- seq(0,10,1)
 Metadata_final <- NULL
 for (i in clus) {
   inter <- a[which(a$cluster %in% i),]
-  inter <- inter %>% 
+  inter <- inter %>%
     mutate(pct_cluster = n / sum(n) * 100)
   Metadata_final <- rbind(Metadata_final, inter)
 }
@@ -287,18 +318,18 @@ ggplot(Metadata_final, aes(fill=phase, y=n, x=phase)) +
   facet_wrap(~cluster, scales='free_x')
 ```
 
-## 6.2 Visualization population by cluster  
+## 6.2 Visualization population by cluster
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-metadata %>% 
-  count(population, cluster) %>% 
-  arrange(cluster, population) %>% 
+metadata %>%
+  count(population, cluster) %>%
+  arrange(cluster, population) %>%
   mutate(pct_total = n / sum(n) * 100) -> a
 
 clus <- seq(0,10,1)
 Metadata_final <- NULL
 for (i in clus) {
   inter <- a[which(a$cluster %in% i),]
-  inter <- inter %>% 
+  inter <- inter %>%
     mutate(pct_cluster = n / sum(n) * 100)
   Metadata_final <- rbind(Metadata_final, inter)
 }
