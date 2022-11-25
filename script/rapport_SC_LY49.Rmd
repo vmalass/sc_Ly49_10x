@@ -121,6 +121,11 @@ FeaturePlot(Singlet_norm, features = "Fcgrt")
 FeaturePlot(Singlet_norm, features = "Fcer1g")
 FeaturePlot(Singlet_norm, features = "Cxcr5")
 
+FeaturePlot(Singlet_norm, features = "Lnpep")
+FeaturePlot(Singlet_norm, features = "Syk")
+FeaturePlot(Singlet_norm, features = "Zap70")
+
+
 ### DE ###
 ###### Population ######
 Singlet_norm.markers_befor %>%
