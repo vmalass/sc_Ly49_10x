@@ -1,0 +1,80 @@
+# 1 Library---------------------------------------------------------------------
+library(AUCell)
+library(openxlsx)
+### Paralize ###
+library(doMC)
+library(doRNG)
+library(doSNOW)
+
+# 2 Import data-----------------------------------------------------------------
+rm(list = ls())
+
+Singlet_norm <- readRDS("~/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
+IEL_sig <- read.xlsx("~/Documents/JM/singelcell_LY49/data/IEL_signature.xlsx")
+
+Metadata <- as.data.frame(Singlet_norm@meta.data[["HTO_maxID"]])
+Metadata <- cbind(Metadata, as.data.frame(Singlet_norm@meta.data[["SCT_snn_res.0.4"]]))
+colnames(Metadata) <- c("population", "cluster")
+log_data <- as.matrix(Singlet_norm@assays[["SCT"]]@data)
+row.names(Metadata) <- colnames(log_data)
+
+genes <- IEL_sig[,1]
+
+set.seed(123)
+
+# 3 Analyse---------------------------------------------------------------------
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes <- IEL_sig[,1]
+genes_2keep <- genes[which(genes %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+set.seed(123)
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+set.seed(123)
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+length(cells_assignment$geneSet1$assignment)  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= cells_assignment$geneSet1$aucThr$selected )
+abline(v= cells_assignment$geneSet1$aucThr$selected )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = cells_assignment$geneSet1$aucThr$selected,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("IEL signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 20),
+                          axis.title = element_text(size = 15),
+                          axis.text = element_text(size = 13)) 
+  
+
+labs(fill = "Population")
+
+  scale_fill_discrete(name = "Population")
