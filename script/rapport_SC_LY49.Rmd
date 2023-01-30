@@ -10,7 +10,7 @@ output:
 
 # 1 Library  
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo = T, fig.height=9, fig.width=9, fig.align="center")
+knitr::opts_chunk$set(echo = T, fig.height=7, fig.width=7, fig.align="center")
 
 if (!require('Seurat')) install.packages('Seurat'); library('Seurat')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
