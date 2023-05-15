@@ -1,0 +1,463 @@
+---
+title: "LY49 Aucell"
+author: "Malassigne_Victor"
+date: "2/27/2023"
+output:
+  html_document:
+    number_sections: true
+    toc: yes
+    toc_depth: 3
+---
+# Library
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = T, fig.height=7, fig.width=7, fig.align="center")
+
+
+library(AUCell)
+library(openxlsx)
+library(ggplot2)
+### Paralize ###
+library(doMC)
+library(doRNG)
+library(doSNOW)
+```
+
+# Import data
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+
+rm(list = ls())
+set.seed(123)
+
+Singlet_norm <- readRDS("~/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
+helios_sig <- read.xlsx("~/Documents/JM/singelcell_LY49/data/helios_signature.xlsx")
+Ly49_pos_sig <- read.xlsx("~/Documents/JM/singelcell_LY49/data/Ly49_pos_singature.xlsx")
+Ly49_neg_sig <- read.xlsx("~/Documents/JM/singelcell_LY49/data/Ly49_neg_singature.xlsx")
+MOG_SP_sig <- read.xlsx("~/Documents/JM/singelcell_LY49/data/MOG_SP_singature.xlsx")
+
+Naive_Treg <- read.xlsx("~/Documents/JM/singelcell_LY49/data/T_4_Nve_Sp_&_Treg_4_FP3+_Nrplo_Co_signature.xlsx")
+Treg_IEL <- read.xlsx("~/Documents/JM/singelcell_LY49/data/Treg_4_FP3+_Nrplo_Co_&_T8_IEL_LCMV_d7_Gut_signature.xlsx")
+
+my_palette = c("Naive"= "#AA4499",
+               "Ly49n"= "#332288",
+               "VV-B8R"= "#DDCC77",
+               "VV_B8R"= "#DDCC77",
+               "Ly49p-CD8ab"= "#117733",
+               "Ly49p_CD8ab"= "#117733",
+               "Ly49p-CD8aa"= "#88CCEE",
+               "Ly49p_CD8aa"= "#88CCEE",
+               "VV-Ly49p-CD8ab"= "#999933",
+               "VV_Ly49p_CD8ab"= "#999933",
+               "VV-Ly49p-CD8aa"= "#882255",
+               "VV_Ly49p_CD8aa"= "#882255",
+               "Ly49_Ag_spe" = "red",
+               "G1" = "salmon2",
+               "G2M" = "green4",
+               "S" = "dodgerblue")
+
+Metadata <- data.frame(Singlet_norm@meta.data[["HTO_maxID"]], Singlet_norm@meta.data[["SCT_snn_res.0.4"]])
+colnames(Metadata) <- c("population", "cluster")
+log_data <- as.matrix(Singlet_norm@assays[["RNA"]]@data)
+row.names(Metadata) <- colnames(log_data)
+
+a <- as.data.frame(Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]])
+
+b <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, Ly49_pos_sig$gene_list_LY49_pos)
+c <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, Ly49_neg_sig$gene_list_Ly49_neg)
+d <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, helios_sig$gene_list_helios)
+e <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, MOG_SP_sig$gene_list_MOG_SP)
+f <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, Naive_Treg$Gene_Symbol)
+g <- intersect(a$`Singlet_norm@assays[["RNA"]]@counts@Dimnames[[1]]`, Treg_IEL$Gene_Symbol)
+```
+
+
+
+# Analyse AUCell
+
+## Helios target
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_helios <- helios_sig[,1]
+genes_2keep <- genes_helios[which(genes_helios %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("Helios target signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+
+
+```
+
+
+```{r}
+library(Rtsne)
+set.seed(123)
+cellsTsne <- Rtsne(t(log_data))
+rownames(cellsTsne$Y) <- colnames(log_data)
+colnames(cellsTsne$Y) <- c("tsne1", "tsne2")
+```
+
+
+```{r}
+selectedThresholds <- getThresholdSelected(cells_assignment)
+for(geneSetName in names(selectedThresholds)[1])
+{
+  nBreaks <- 5 # Number of levels in the color palettes
+  # Color palette for the cells that do not pass the threshold
+  colorPal_Neg <- grDevices::colorRampPalette(c("black","blue", "skyblue"))(nBreaks)
+  # Color palette for the cells that pass the threshold
+  colorPal_Pos <- grDevices::colorRampPalette(c("pink", "magenta", "red"))(nBreaks)
+  
+  # Split cells according to their AUC value for the gene set
+  passThreshold <- getAUC(cells_AUC)[geneSetName,] >  selectedThresholds[geneSetName]
+  if(sum(passThreshold) >0 )
+  {
+    aucSplit <- split(getAUC(cells_AUC)[geneSetName,], passThreshold)
+    
+    # Assign cell color
+    cellColor <- c(setNames(colorPal_Neg[cut(aucSplit[[1]], breaks=nBreaks)], names(aucSplit[[1]])), 
+    setNames(colorPal_Pos[cut(aucSplit[[2]], breaks=nBreaks)], names(aucSplit[[2]])))
+    
+    # Plot
+    plot(cellsTsne, main=geneSetName,
+    sub="Pink/red cells pass the threshold",
+    col=cellColor[rownames(cellsTsne)], pch=16) 
+  }
+}
+```
+
+
+## Ly49 pos
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_Ly49_pos <- Ly49_pos_sig[,1]
+genes_2keep <- genes_Ly49_pos[which(genes_Ly49_pos %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("Ly49 pos signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+```
+
+
+
+
+## Ly49 neg
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_Ly49_neg <- Ly49_neg_sig[,1]
+genes_2keep <- genes_Ly49_neg[which(genes_Ly49_neg %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("Ly49 neg signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+```
+
+
+
+
+
+## MOG SP
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_MOG <- MOG_SP_sig[,1]
+genes_2keep <- genes_MOG[which(genes_MOG %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("MOG SP signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+
+
+```
+
+
+
+
+
+## Signature DE Naive_Treg Immgene
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_MOG <- Naive_Treg[,1]
+genes_2keep <- genes_MOG[which(genes_MOG %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("Naive & Treg signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+
+
+```
+
+
+
+
+## Signature DE Treg_IEL Immgene
+```{r, echo=FALSE,  message=FALSE, warning=FALSE}
+## 3.1 Ranking cells
+cells_rankings <- AUCell_buildRankings(log_data, 
+                                       nCores = 9)
+
+## 3.2 Identical selected gene
+genes_MOG <- Treg_IEL[,1]
+genes_2keep <- genes_MOG[which(genes_MOG %in% rownames(log_data))]
+geneSets <- list(geneSet1=genes_2keep)
+
+## 3.3 Calculate AUC
+cells_AUC <- AUCell_calcAUC(geneSets, 
+                            cells_rankings, 
+                            aucMaxRank=nrow(cells_rankings) * 0.05, 
+                            nCores = 9)
+
+## 3.4 Calculate threshold
+cells_assignment <- AUCell_exploreThresholds(cells_AUC, 
+                                             plotHist = TRUE,
+                                             assign = TRUE,
+                                             nCores = 9)
+
+## 3.5 Check value
+seuil <- cells_assignment$geneSet1$aucThr$selected  # Seuil value 
+print(paste0("Seuil : ", seuil))
+print(paste0("Nombre de cellule selectionne : ", length(cells_assignment$geneSet1$assignment)))  # cell numbre selected
+# No cell identification
+
+## 3.6 identifaction cell with seuil
+geneSetName <- rownames(cells_AUC)[grep("geneSet1", rownames(cells_AUC))]
+AUCell_plotHist(cells_AUC[geneSetName,], aucThr= seuil )
+abline(v= seuil )
+# No cell identification
+
+## 3.7 sort AUC by cell
+aucMatrix <- t(getAUC(cells_AUC))
+# all(row.names(aucMatrix) == row.names(Metadata)) # check identical sort
+dataAUC <- cbind(Metadata, aucMatrix)
+
+## 3.8 visualisation
+ggplot(dataAUC, aes(x = as.factor(population), y = geneSet1, color = as.factor(population))) +
+  geom_violin() + geom_jitter() +
+  geom_hline(yintercept = seuil,
+             linetype = "dashed") +
+  xlab("Population") + ylab("AUC") +
+  ggtitle("Treg & IEL signature enrichment in population")+
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 10)) 
+
+
+```
+
+
+
+
+
+
+
+
+
+

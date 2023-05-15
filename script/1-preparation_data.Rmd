@@ -132,7 +132,6 @@ data.frame(ByLibSize=sum(libsize.drop), ByFeature=sum(feature.drop), ByFeature=s
 
 QC[["percent.mt"]] <- PercentageFeatureSet(QC, pattern = "^mt-")
 VlnPlot(QC, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-
 ```
 
 On prend les les gènes qui sont exprimés dans minimum 5 cellules.
@@ -165,11 +164,13 @@ new_hto <- as.matrix(new_hto[, joint.bcs])
 ####### Configuration de l'object seurat (mRNA) #######
 
 levels(x = QC)
-# mat <- suppressWarnings(SCTransform(QC, variable.features.rv.th = 1.3))
-mat <- NormalizeData(QC)
-mat <- FindVariableFeatures(mat, selection.method = "vst", verbose = FALSE)
-mat <- ScaleData(mat,features = VariableFeatures(mat))
+mat <- suppressWarnings(SCTransform(QC, variable.features.rv.th = 1.3))
+# mat <- NormalizeData(QC)
+# mat <- FindVariableFeatures(mat, selection.method = "vst", verbose = FALSE)
+# mat <- ScaleData(mat,features = VariableFeatures(mat))
 ```
+
+
 ```{r, echo=FALSE,  message=FALSE, warning=FALSE}
 top30 <- head(VariableFeatures(mat), 30)
 plot1 <- VariableFeaturePlot(mat)
@@ -193,6 +194,7 @@ Après démultiplexing (concordance des barcode cell entre la banque ARNm et HTO
 Idents(mat) <- "HTO_maxID"
 RidgePlot(mat, assay = "HTO", features = rownames(mat[["HTO"]])[1:7], ncol = 2)
 ```
+
 ```{r, echo=FALSE,  message=FALSE, warning=FALSE}
 VlnPlot(mat, features = "nCount_HTO", pt.size = 0.1, log = TRUE, group.by = "hash.ID")
 
@@ -207,6 +209,7 @@ mat.subset <- ScaleData(mat.subset, features = rownames(mat.subset),
 mat.subset <- RunPCA(mat.subset, features = rownames(mat.subset), approx = FALSE)
 mat.subset <- RunUMAP(mat.subset, dims = 1:7)
 DimPlot(mat.subset, reduction = "umap", group.by = "hash.ID")
+DimPlot(mat.subset, reduction = "pca", group.by = "hash.ID")
 
 ```
 

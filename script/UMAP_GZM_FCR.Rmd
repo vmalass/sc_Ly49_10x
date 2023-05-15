@@ -1,0 +1,145 @@
+---
+title: "GZM/FC"
+author: "Malassigne_Victor"
+date: "2/17/2023"
+output: 
+  html_document:
+    toc: yes
+    toc_depth: 3
+---
+
+# 1 Library  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = T, fig.height=5, fig.width=7, fig.align="center")
+
+if (!require('Seurat')) install.packages('Seurat'); library('Seurat')
+if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
+if (!require('khroma')) install.packages('khroma'); library('khroma')
+if (!require('future')) install.packages('future'); library('future')
+if (!require('clustree')) install.packages('clustree'); library('clustree')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('openxlsx')) install.packages('openxlsx'); library('openxlsx')
+if (!require('tidyr')) install.packages('tidyr'); library('tidyr')
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+if (!require('org.Mm.eg.db')) BiocManager::install('org.Mm.eg.db'); library('org.Mm.eg.db')
+if (!require('AnnotationDbi')) BiocManager::install('AnnotationDbi'); library('AnnotationDbi')
+if (!require('enrichplot')) BiocManager::install('enrichplot'); library('enrichplot')
+if (!require('clusterProfiler')) BiocManager::install('clusterProfiler'); library('clusterProfiler')
+if (!require('ReactomePA')) BiocManager::install('ReactomePA'); library('ReactomePA')
+if (!require('AUCell')) BiocManager::install('AUCell'); library('AUCell')
+```
+
+# 2 import data    
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+rm(list = ls())
+plan("multiprocess", workers = 9) # activate parallelization
+
+Singlet_norm <- readRDS("~/Documents/JM/singelcell_LY49/data/Singlet_norm_3.RDS")
+Singlet_norm.markers_befor <- read.xlsx("~/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_befor_clusterization.xlsx")
+Singlet_norm.markers_after <- read.xlsx("~/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization_reso04.xlsx")
+Singlet_norm.markers_after_05 <- read.xlsx("~/Documents/JM/singelcell_LY49/SC_Ly49_10X/results/DE_after_clusterization_reso05.xlsx")
+
+my_palette = c("Naive"= "#AA4499",
+               "Ly49n"= "#332288",
+               "VV-B8R"= "#DDCC77",
+               "Ly49p-CD8ab"= "#117733",
+               "Ly49p-CD8aa"= "#88CCEE",
+               "VV-Ly49p-CD8ab"= "#999933",
+               "VV-Ly49p-CD8aa"= "#882255",
+               "G1" = "salmon2",
+               "G2M" = "green4",
+               "S" = "dodgerblue")
+a <- as.data.frame(Singlet_norm@assays[["SCT"]]@var.features)
+```
+
+# 3 Famille des GZM  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Gzma")
+FeaturePlot(Singlet_norm, features = "Gzmb")
+FeaturePlot(Singlet_norm, features = "Gzmk")
+FeaturePlot(Singlet_norm, features = "Gzmm")
+```
+Gzm a, b et k dans le cluster 4, 5 et 8 qui sont en phase G2M et S
+
+# 4 Famille des FCR  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Fcer1g") # IgE
+print("Fcer1g : IgE")
+FeaturePlot(Singlet_norm, features = "Fcgr2b") # IGg2b
+print("Fcgr2b : IGg2b")
+FeaturePlot(Singlet_norm, features = "Fcgr3")  # IgG
+print("Fcgr3 : IgG")
+FeaturePlot(Singlet_norm, features = "Fcgrt")  # IgG Fc structure proche CMH I
+print("Fcgrt : IgG Fc structure proche CMH I")
+FeaturePlot(Singlet_norm, features = "Fcrl1")  # Fc Receptor Like 1, activating coreceptor in B-cells
+print("Fcrl1 : Fc Receptor Like 1, activating coreceptor in B-cells")
+```
+
+Fcer1g (IgE) dans le cluster 2, 6 et 1 qui correspond au population Ly49 CD8 aa avec infection VV ou non.
+Fcgrt (IgG Fc structure proche CMH I) dans le cluster 0 et 1 qui correspond au population Ly49 CD8 ab avec infection VV ou non.
+
+
+# 5 Famille des IL  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Il11ra1") 
+FeaturePlot(Singlet_norm, features = "Il15") 
+FeaturePlot(Singlet_norm, features = "Il17rb") 
+FeaturePlot(Singlet_norm, features = "Il18r1") 
+FeaturePlot(Singlet_norm, features = "Il18rap") 
+FeaturePlot(Singlet_norm, features = "Il2rb") 
+FeaturePlot(Singlet_norm, features = "Il4i1") 
+FeaturePlot(Singlet_norm, features = "Il4ra") 
+FeaturePlot(Singlet_norm, features = "Il6ra")
+FeaturePlot(Singlet_norm, features = "Il6st")
+FeaturePlot(Singlet_norm, features = "Il7r")
+```
+
+# 6 Famille des Cx  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Cx3cr1") 
+FeaturePlot(Singlet_norm, features = "Cxadr") 
+
+FeaturePlot(Singlet_norm, features = "Cxcl10") 
+FeaturePlot(Singlet_norm, features = "Cxcl16") 
+
+FeaturePlot(Singlet_norm, features = "Cxcr5") 
+FeaturePlot(Singlet_norm, features = "Cxcr6") 
+```
+
+# 7 Famille des CCL  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Ccl3") 
+FeaturePlot(Singlet_norm, features = "Ccl4") 
+FeaturePlot(Singlet_norm, features = "Ccl5") 
+
+FeaturePlot(Singlet_norm, features = "Xcl1") 
+```
+
+# 8 Famille des BCL2  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Bcl2") 
+FeaturePlot(Singlet_norm, features = "Bcl2a1a") 
+FeaturePlot(Singlet_norm, features = "Bcl2a1b") 
+FeaturePlot(Singlet_norm, features = "Bcl2l11") 
+```
+
+# 9 Famille des BTG  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Btg1") 
+FeaturePlot(Singlet_norm, features = "Btg2")
+```
+
+
+
+# 10 Famille des GZM  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+FeaturePlot(Singlet_norm, features = "Tnf")
+FeaturePlot(Singlet_norm, features = "Tnfaip3")
+FeaturePlot(Singlet_norm, features = "Tnfrsf23")
+FeaturePlot(Singlet_norm, features = "Tnfrsf25")
+FeaturePlot(Singlet_norm, features = "Tnfrsf26")
+FeaturePlot(Singlet_norm, features = "Tnfrsf9")
+FeaturePlot(Singlet_norm, features = "Tnfsf11")
+FeaturePlot(Singlet_norm, features = "Tnfsf4")
+FeaturePlot(Singlet_norm, features = "Tnfsf8")
+```
