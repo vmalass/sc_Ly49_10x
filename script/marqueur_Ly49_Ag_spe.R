@@ -148,7 +148,7 @@ VlnPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe", cols = my_palette
   RotatedAxis() +
   theme(legend.position = "bottom")
 
-var <- c("Il18r1", "Il18rap", "Il2rb", "Il4ra", "Il6ra", "Il6st", "Il7r")
+var <- c("Il18r1", "Il18rap", "Il2rb", "Il4ra", "Il4i1", "Il6ra", "Il6st", "Il11ra1", "Il15", "Il7r", "Il17rb" )
 DotPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe") + RotatedAxis()
 VlnPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe", cols = my_palette) + 
   RotatedAxis() +
@@ -160,7 +160,7 @@ VlnPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe", cols = my_palette
   RotatedAxis() +
   theme(legend.position = "bottom")
 
-var <- c("Ccl3", "Ccl4", "Ccl5", "Xcl1")
+var <- c("Ccl3", "Ccl4", "Ccl5", "Xcl1", "Cxcl10", "Cxcl16")
 DotPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe") + RotatedAxis()
 VlnPlot(Singlet_norm, features = var, group.by = "pop_Ag_spe", cols = my_palette) + 
   RotatedAxis() +

@@ -1,4 +1,4 @@
-
+Identification des gènes marqueurs des Ly49 Ag spé
 
 # 1 Library---------------------------------------------------------------------
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
@@ -8,13 +8,6 @@ if (!require('Seurat')) install.packages('Seurat'); library('Seurat')
 if (!require('dplyr')) install.packages('dplyr'); library('dplyr')
 if (!require('clusterProfiler')) BiocManager::install('clusterProfiler'); library('clusterProfiler')
 if (!require('cowplot')) install.packages('cowplot'); library('cowplot')
-
-
-
-
-
-
-
 
 # 2 import data-----------------------------------------------------------------
 rm(list = ls())
@@ -137,5 +130,5 @@ DoHeatmap(data_filtre, features = rownames(Ly49_ag_spe), group.by = "pop_Ag_spe"
         legend.text = element_text(size=15))
 
 
-write.csv(a, "list_DE_Ly49AgSpe_VVB8R.csv")
+# write.csv(a, "list_DE_Ly49AgSpe_VVB8R.csv")
 
